@@ -1,14 +1,14 @@
-const { supabaseInstance } = require('../config/supabaseClient');
+import { supabase as supabaseInstance } from '../config/supabaseClient';
+import { type Article } from '../types'; // Assuming the Article type is defined
 
-interface Article {
-  content: string;
-}
+const saveArticleToDatabase = async (article: Article): Promise<Article[]> => {
+  const { data, error } = await supabaseInstance
+    .from('posts')
+    .insert([article]) // Inserting the full article object
 
-exports.saveArticleToDatabase = async (sanitizedHTML:string): Promise<Article[]> => {
-    const { data, error } = await supabaseInstance
-        .from('articles')
-        .insert([{  content: sanitizedHTML }]);
-
-    if (error) throw new Error(error.message);
-    return data;
+  if (error) throw new Error(error.message);
+//@ts-ignore
+  return data;
 };
+
+export { saveArticleToDatabase }
