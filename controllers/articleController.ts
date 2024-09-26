@@ -7,21 +7,21 @@ import { type RequestWithUser } from '../middlewares/authMiddleware';
 
 export const submitArticle = async (req: RequestWithUser, res: Response) => {
 
-  const { htmlContent, title, rating } = req.body;
-  
-  if (!htmlContent || !title) {
+  const { content, title } = req.body;
+  console.log(content, title)
+  if (!content || !title) {
     return res.status(400).json({ error: 'Title or content missing' });
   }
-  if(!req.user) return res.status(500).json({error: 'There has been an error, we apologize!'})
-  // Sanitize the HTML content
-  const sanitizedHTML = sanitizeHTML(htmlContent);
 
-  const article: Article = {
-    post_id: '', // Supabase will auto-generate this in the database
+  if(!req.user) return res.status(500).json({error: 'There has been an error, we apologize!'})
+
+  const sanitizedHTML = sanitizeHTML(content);
+
+  const article: Partial<Article>= {
     title,
     userId: req.user.id, // Pull the user ID from the request
     content: sanitizedHTML,
-    rating: rating || 0,
+    rating: 1,
     updated_at: new Date(),
     created_at: new Date(),
   };
@@ -31,6 +31,7 @@ export const submitArticle = async (req: RequestWithUser, res: Response) => {
     const result = await saveArticleToDatabase(article);
     res.status(200).json({ success: true, data: result });
   } catch (error) {
+    console.log(error);
     res.status(500).json({ success: false, error: 'Failed to save article' });
   }
 };
