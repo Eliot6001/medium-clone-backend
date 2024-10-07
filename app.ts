@@ -10,9 +10,15 @@ import cors from 'cors';
 
 const app = expressInstance();
 
+var corsOptions = {
+  origin: process.env.FRONTEND_URL,
+  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+}
+
+console.log(process.env.FRONTEND_URL)
 //security stuff
 app.use(helmet());
-app.use(cors());
+app.use(cors(corsOptions));
 
 //logging
 app.use(morgan('combined'));
@@ -23,8 +29,6 @@ app.use(morgan('combined'));
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
-// Authentication middleware (if needed)
-app.use(authMiddleware);
 
 
 // Routes

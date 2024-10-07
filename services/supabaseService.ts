@@ -11,4 +11,19 @@ const saveArticleToDatabase = async (article: Partial<Article>): Promise<Article
   return data;
 };
 
-export { saveArticleToDatabase }
+const getArticleFromDatabase = async (id: string): Promise<Article | null> => {
+  const { data, error } = await supabaseInstance
+    .from('posts')
+    .select('*') // Selecting all fields
+    .eq('post_id', id) // Filtering by the specific article ID
+    .single(); // Ensures only one result is returned (since ID is unique)
+
+  if (error) {
+    console.error('Error fetching article:', error.message);
+    return null;
+  }
+
+  return data;
+};
+
+export { saveArticleToDatabase, getArticleFromDatabase }
