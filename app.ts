@@ -1,12 +1,14 @@
 import expressInstance from 'express'
-
 import articleRoutes from './routes/articleRoutes'
+import authRoutes from './routes/authRoutes'
 import { authMiddleware } from './middlewares/authMiddleware';
 import bodyParser from "body-parser";
 import morgan from 'morgan'
 import helmet from 'helmet';
 import cors from 'cors';
-
+//uploadthing setup
+import { uploadRouter } from "./controllers/mediaController";
+import { createRouteHandler } from "uploadthing/express";
 
 const app = expressInstance();
 
@@ -30,9 +32,16 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
 
 
-
 // Routes
 app.use('/articles', articleRoutes);
+app.use('/auth', authRoutes);
+app.use(
+  "/api/uploadthing",
+  createRouteHandler({
+    router: uploadRouter,
+    config: { token: process.env.UPLOADTHING_TOKEN, isDev: true },
+  }),
+);
 
 app.use((err: Error, req: expressInstance.Request, res: expressInstance.Response, next: expressInstance.NextFunction) => {
   console.error(err.stack);

@@ -1,5 +1,5 @@
 import { User } from '@supabase/supabase-js';
-import { supabase } from '../config/supabaseClient'
+import  { supabase }  from '../config/supabaseClient'
 import { Request, Response, NextFunction } from 'express';
 
 //ss auth
