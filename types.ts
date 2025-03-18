@@ -7,6 +7,8 @@ interface Article {
   rating?: number; 
   updated_at: Date;
   created_at: Date;
+  deleted: boolean;
+  deleted_at: Date;
 }
 
 interface Rating {

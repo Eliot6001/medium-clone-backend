@@ -59,8 +59,7 @@ const getArticleFromDatabase = async (id: string): Promise<Article | null> => {
   return data;
 };
 
-//WE may need to create the edit and delete functions for the articles
-// Plus 
+
 
 //Get all articles
 const getAllArticlesFromDatabase = async (): Promise<Article[] | []> => {
@@ -68,6 +67,7 @@ const getAllArticlesFromDatabase = async (): Promise<Article[] | []> => {
     const { data: posts, error } = await supabaseInstance
       .from('posts')
       .select('*')
+      .eq('deleted', false)
       .limit(100);
     if (error) throw new Error(error.message);
     return posts ?? [];

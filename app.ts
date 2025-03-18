@@ -1,5 +1,7 @@
 import expressInstance from 'express'
 import articleRoutes from './routes/articleRoutes'
+import profileRoutes from './routes/profileRoutes'
+
 import authRoutes from './routes/authRoutes'
 import { authMiddleware } from './middlewares/authMiddleware';
 import bodyParser from "body-parser";
@@ -34,6 +36,8 @@ app.use(bodyParser.json());
 
 // Routes
 app.use('/articles', articleRoutes);
+app.use('/profiles', profileRoutes);
+
 app.use('/auth', authRoutes);
 app.use(
   "/api/uploadthing",

@@ -6,9 +6,12 @@ import {
   getAllArticlesFromDatabase,
   updateArticleInDatabase,
   removeArticleFromDatabase,
+  getModerationData,
+  getProfileRole,
 } from "../services/supabaseService";
 import { Article } from "../types"; // Import the Article type
 import { type RequestWithSupabase } from "../middlewares/authRLSMiddleware";
+import { type RequestWithUser } from "../middlewares/authMiddleware";
 
 export const submitArticle = async (
   req: RequestWithSupabase,
@@ -69,23 +72,59 @@ export const submitArticle = async (
   }
 };
 
-export const getArticle = async (req: Request, res: Response) => {
+export const getArticle = async (req: RequestWithUser, res: Response) => {
   const { id } = req.params;
-  console.log(req.params);
+  console.log("Data received from a user", req.user);
 
   try {
+    // Fetch article once, outside conditional blocks
     const article = await getArticleFromDatabase(id);
 
+    // Handle case where article is not found
     if (!article) {
       return res.status(404).json({ error: "Article not found" });
     }
 
-    res.status(200).json(article);
+    // Unauthenticated user logic
+    if (!req.user) {
+      if (article.deleted) {
+        return res.status(410).json({ error: "Article has been previously deleted" });
+      }
+      return res.status(200).json(article);
+    }
+
+    // Authenticated user logic
+    const { id: userid } = req.user;
+
+    if (!article.deleted) {
+      // If article is not deleted, return it immediately
+      return res.status(200).json(article);
+    }
+
+    // Article is deleted; check user permissions
+    // Assuming article has a 'userid' field and req.user has a 'role' field
+    const isAuthor = userid === article.userid;
+    const isModerator = await getProfileRole(req.user.id); // Adjust based on your user object
+
+    if (isAuthor || isModerator?.ROLE) {
+      const moderationData = await getModerationData(article.postid as string);
+      const resultData = {
+        ...article,
+        reason: moderationData?.reason,
+        removalBy: moderationData?.moderatorProfile?.username,
+        removalId: moderationData?.moderatorProfile?.id,
+      };
+      console.log(resultData);
+      return res.status(200).json(resultData);
+    } else {
+      return res.status(403).json({ error: "Not authorized to view this article" });
+    }
   } catch (error) {
     console.log(error);
-    res.status(500).json({ error: "Failed to retrieve article" });
+    return res.status(500).json({ error: "Failed to retrieve article" });
   }
 };
+
 export const removeArticle = async (
   req: RequestWithSupabase,
   res: Response
@@ -119,3 +158,64 @@ export const getAllArticles = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to retrieve articles" });
   }
 };
+
+
+
+
+
+export const recoverArticle = async (
+  req: RequestWithSupabase,
+  res: Response
+) => {
+  try {
+    const { id } = req.params; // article id
+    if (!req.user) {
+      return res.status(500).json({ error: "User not authenticated" });
+    }
+    if (!req.supabaseAuth) {
+      return res.status(500).json({ error: "Failed to authenticate, try again!" });
+    }
+
+    // Retrieve the article from the database
+    const article = await getArticleFromDatabase(id);
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+    if (!article.deleted) {
+      return res.status(400).json({ error: "Article is not deleted" });
+    }
+
+    // Fetch the user's role from the user_profiles table
+   const ROLE = await getProfileRole(req.user.id)
+    console.log(ROLE)
+    if (ROLE?.ROLE !== "USER" && ROLE?.ROLE !== "MODERATOR" ) {
+      return res.status(500).json({ error: "Could not fetch user profile" });
+    }
+    const userRole = ROLE; // "USER" or "MODERATOR"
+
+    // Check if there's a moderator deletion record in the article_moderation table
+    const moderationData = await getModerationData(article.postid as string);
+
+    // If the article was removed by a moderator, only allow recovery if the current user is a moderator.
+    if (moderationData && String(userRole) !== "MODERATOR") {
+      return res.status(403).json({ error: "Article was removed by a moderator and cannot be republished by the author." });
+    }
+
+    // Update the article to mark it as recovered.
+    const updatedArticle = await updateArticleInDatabase({
+      article: {
+        ...article,
+        deleted: false,
+        deleted_at: undefined,
+        updated_at: new Date(),
+      },
+      supabaseAuth: req.supabaseAuth,
+    });
+
+    res.status(200).json({ success: true, data: updatedArticle });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to Recover!" });
+  }
+};
+
