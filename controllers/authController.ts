@@ -49,7 +49,7 @@ const oAuthSetup = async (req: Request, res: Response) => {
         return res.status(500).json({ error: "OAuth exchange failed: " + err.message });
       }
     }
-    const redirectUrl = next && next !== "/" ? next : process.env.FRONTEND_URL;
+    const redirectUrl = next && next !== "/" ? next : process.env.FRONTEND_URL!;
     // Safely slice the next parameter as a string
     res.redirect(303, redirectUrl);
   };

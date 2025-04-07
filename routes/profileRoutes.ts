@@ -7,6 +7,7 @@ import { supabase } from '../config/supabaseClient';
 import { type RequestWithUser } from '../middlewares/authMiddleware';
 import { supabaseAuthClientMiddleware } from '../middlewares/authRLSMiddleware';
 import {optionalAuthMiddleware} from '../middlewares/optionalAuthMiddleware'
+import { submitHistory } from '../controllers/profileController';
 
 const router = express.Router();
 
@@ -59,6 +60,7 @@ router.post('/engagement', async (req, res) => {
       
     }
   })
+
 
 
 export default router;

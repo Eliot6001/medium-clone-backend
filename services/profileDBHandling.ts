@@ -1,6 +1,7 @@
 //maybe not needed, we'll see
 
 
+import { User } from "@supabase/supabase-js";
 import { supabase } from "../config/supabaseClient";
 
 type profileRole = {
@@ -48,4 +49,32 @@ const getUserArticles = async (profileId: string) => {
     return data
   };
 
-export {getProfileRole, getUserArticles}
+  const AddUserHistory = async (user: User, postid: string) => {
+    console.log("Adding user history:", user);
+    if (!user || !user.id || !postid) {
+      console.error("Invalid user data:", user);
+      return null;
+    }
+    
+    const { data, error } = await supabase
+    .from("history")
+    .upsert(
+      [
+        {
+          postid: postid,
+          userid: user.id,
+          created_at: new Date(),
+        },
+      ],
+      { onConflict: 'postid,userid' }
+    );
+  
+    if (error) {
+      console.error("Error adding history:", error.message);
+      return null;
+    }
+       
+    return data; 
+  }
+    
+export {getProfileRole, getUserArticles, AddUserHistory}

@@ -8,6 +8,7 @@ import {
   removeArticleFromDatabase,
   getModerationData,
   getProfileRole,
+  AddUserHistory,
 } from "../services/supabaseService";
 import { Article } from "../types"; // Import the Article type
 import { type RequestWithSupabase } from "../middlewares/authRLSMiddleware";
@@ -90,6 +91,8 @@ export const getArticle = async (req: RequestWithUser, res: Response) => {
       if (article.deleted) {
         return res.status(410).json({ error: "Article has been previously deleted" });
       }
+
+     
       return res.status(200).json(article);
     }
 
@@ -97,10 +100,15 @@ export const getArticle = async (req: RequestWithUser, res: Response) => {
     const { id: userid } = req.user;
 
     if (!article.deleted) {
+      const response = await AddUserHistory(req.user, article.postid);
+      console.log("History response", response);
+    
       // If article is not deleted, return it immediately
       return res.status(200).json(article);
     }
 
+    //assigning History thingy
+    
     // Article is deleted; check user permissions
     // Assuming article has a 'userid' field and req.user has a 'role' field
     const isAuthor = userid === article.userid;
