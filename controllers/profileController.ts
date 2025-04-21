@@ -22,6 +22,49 @@ export const getUserPublishedArticles = async (req: Request, res: Response) => {
     }
   };
 
+export const getUserDeletedArticles = async (req: RequestWithSupabase, res: Response) => {
+  const supabase = req.supabaseAuth;  
+  const { profileId } = req.params;
+  if(!supabase)       return res.status(500).json({ error: "Not Authenticated, Try again later!" });
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*')
+      .eq('userid', profileId)
+      .eq('deleted', true).limit(100);
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ deletedArticles: data });
+  } catch (err) {
+    return res.status(500).json({ error: "Something has occured on our end, We apologize." });
+
+  }
+};
+
+export const getUserWatchedArticles = async (req: RequestWithSupabase, res: Response) => {
+  const supabase = req.supabaseAuth;  
+  const { profileId } = req.params;
+  
+  if(!supabase)       return res.status(500).json({ error: "Not Authenticated, Try again later!" });
+  try {
+    //This Implementation isn't full, Yet it works
+    //To spit out a 100 history articles
+    // A desired approach would be to create a cursor param that sets from what date you fetch it
+    const { data, error } = await supabase.rpc('fetch_history_article_contents', {p_userid: req.user?.id} );
+
+    if (error) {
+      return res.status(500).json({ error: error.message });
+    }
+
+    return res.status(200).json({ historyArticles: data });
+  } catch (err) {
+    return res.status(500).json({ error: "Something has occured on our end, We apologize." });
+
+  }
+};
 
 export const submitHistory = async (req: RequestWithSupabase, res: Response) => {
   const { postid } = req.body;

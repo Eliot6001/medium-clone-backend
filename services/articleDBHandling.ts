@@ -27,6 +27,7 @@ const saveArticleToDatabase = async (reqObject: ArticleWithClient): Promise<Arti
 
   return data ?? [];
 };
+
 const updateArticleInDatabase = async (reqObject: ArticleWithClient): Promise<Article[] | []> => {
   const {article, supabaseAuth} = reqObject;
   //supabaseClient received from req.authRLSMiddleware
