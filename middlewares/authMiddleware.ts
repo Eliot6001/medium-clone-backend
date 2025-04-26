@@ -20,7 +20,6 @@ export type RequestWithUser = Request & {
 }
 
 const authMiddleware = async (req: RequestWithUser, res: Response, next: NextFunction) => {
-
   const JWT = getToken(req)
 
   switch (JWT) {

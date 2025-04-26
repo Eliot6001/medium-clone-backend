@@ -97,4 +97,52 @@ export const submitHistory = async (req: RequestWithSupabase, res: Response) => 
     res.status(500).json({ success: false, error: "Failed to save rating" });
   }
 }
+
+export const getIfUserHasInterestsPicked = async (req: RequestWithSupabase, res: Response) => {
+  const supabase = req.supabaseAuth
+  const user = req.user;
+  const id = user?.id;
   
+  if(!supabase || !id) return res.status(501).json({success: false, error: 'Login again!'});
+  try {
+    const {data} = await supabase.from("user_profile_interests").select('preferred_fields').eq('userid', id).maybeSingle();
+    if(data && data.preferred_fields.length == 0){
+      res.status(200).json({ success: true, data: "CHOOSE" });
+    } 
+  } catch (error) {
+    return res.status(500).json({success: false, error: 'There was an error'});
+  }
+
+}
+  
+
+export const postUserHasInterests = async (req: RequestWithSupabase, res: Response) => {
+  const supabase = req.supabaseAuth;
+  const user = req.user;
+  const id = user?.id;
+
+  if (!supabase || !id) return res.status(401).json({ success: false, error: 'Login again!' });
+  const selected = req.body.selected;
+
+  if (!Array.isArray(selected) || selected.length === 0) {
+    return res.status(400).json({ success: false, error: "Invalid selection." });
+  }
+
+  try {
+    const { error } = await supabase
+      .from("user_profile_interests")
+      .upsert({
+        userid: id,
+        preferred_fields: selected.slice(0, 3), // only store top 3
+        last_updated: new Date().toISOString()
+      }, { onConflict: 'userid' });
+
+    if (error) throw error;
+
+    return res.status(200).json({ success: true });
+
+  } catch (err) {
+    return res.status(500).json({ success: false, error: "Couldn't update preferences." });
+  }
+
+}
