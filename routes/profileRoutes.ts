@@ -1,7 +1,7 @@
 import { Request, Response } from 'express'
 import express from 'express';
 import { getUserPublishedArticles, getUserDeletedArticles, getUserWatchedArticles,getIfUserHasInterestsPicked
-  ,postUserHasInterests
+  ,postUserHasInterests, getProfileInformation
  } from '../controllers/profileController';
 
 import { authMiddleware } from '../middlewares/authMiddleware'; // Import the auth middleware
@@ -17,6 +17,8 @@ router.get('/:profileId/articles', getUserPublishedArticles);
 router.get('/:profileId/deletedArticles', authMiddleware, supabaseAuthClientMiddleware, getUserDeletedArticles)
 router.get('/:profileId/history', authMiddleware, supabaseAuthClientMiddleware, getUserWatchedArticles)
 router.get('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, getIfUserHasInterestsPicked)
+router.get('/:profileId', getProfileInformation);
+
 router.post('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, postUserHasInterests)
 
 router.post(

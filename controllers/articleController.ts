@@ -13,6 +13,11 @@ import {
 import { Article } from "../types"; // Import the Article type
 import { type RequestWithSupabase } from "../middlewares/authRLSMiddleware";
 import { type RequestWithUser } from "../middlewares/authMiddleware";
+import { supabase } from "../config/supabaseClient";
+import NodeCache from 'node-cache';
+import axios from "axios";
+const cache = new NodeCache({ stdTTL: 86400 });  // Cache expires in 24 hours
+const FASTAPI_URL = process.env.FASTAPI_URL || "http://localhost:8800";
 
 export const submitArticle = async (
   req: RequestWithSupabase,
@@ -65,6 +70,16 @@ export const submitArticle = async (
             article: article,
             supabaseAuth: req.supabaseAuth,
           });
+
+      //Notify suggestion system
+
+    axios.post(`${FASTAPI_URL}/process`, { postid: req.user.id })
+    .then(response => {
+      console.log("Processing triggered:", response.data);
+    })
+    .catch(error => {
+      console.error("Error triggering processing:", error);
+    });
 
     res.status(200).json({ success: true, data: result });
   } catch (error) {
@@ -227,3 +242,29 @@ export const recoverArticle = async (
   }
 };
 
+
+
+export const getPopularArticles = async (req: Request, res: Response) => {
+    //Try getting it from cache in memory
+    const cachedPopularArticles = cache.get('popularArticles');
+
+    if (cachedPopularArticles) {
+      console.log(cachedPopularArticles)
+      return res.json(cachedPopularArticles);
+    }
+  
+    try {
+      const { data, error } = await supabase.rpc('get_popular_articles');
+      console.log(data)
+
+      if (error) {
+        return res.status(500).json({ error: 'Failed to fetch popular articles from database.' });
+      }
+  
+      cache.set('popularArticles', data);
+  
+      return res.json(data);
+    } catch (err) {
+      return res.status(500).json({ error: 'An error occurred while fetching popular articles.' });
+    }
+}

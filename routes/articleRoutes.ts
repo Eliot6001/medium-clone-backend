@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import express from 'express';
-import { getArticle, submitArticle, getAllArticles, removeArticle, recoverArticle} from '../controllers/articleController';
+import { getArticle, submitArticle, getAllArticles, removeArticle, recoverArticle, getPopularArticles} from '../controllers/articleController';
 import { submitRating, fetchArticleRating } from '../controllers/ratingController';
 import { authMiddleware } from '../middlewares/authMiddleware'; // Import the auth middleware
 import { supabase } from '../config/supabaseClient';
@@ -21,8 +21,9 @@ router.delete("/:id", authMiddleware, supabaseAuthClientMiddleware, removeArticl
 
 router.get('/api/', getAllArticles);
 router.get('/rate-article', fetchArticleRating);
-router.get('/:id', optionalAuthMiddleware, getArticle);
+router.get('/popular', getPopularArticles)
 
+router.get('/:id', optionalAuthMiddleware, getArticle);
 
 //recover
 

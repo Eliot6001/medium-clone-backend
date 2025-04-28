@@ -133,7 +133,7 @@ export const postUserHasInterests = async (req: RequestWithSupabase, res: Respon
       .from("user_profile_interests")
       .upsert({
         userid: id,
-        preferred_fields: selected.slice(0, 3), // only store top 3
+        preferred_fields: selected.slice(0, 3), // only store top 3 Also, i might have needed to check for the fields but who cares?
         last_updated: new Date().toISOString()
       }, { onConflict: 'userid' });
 
@@ -146,3 +146,32 @@ export const postUserHasInterests = async (req: RequestWithSupabase, res: Respon
   }
 
 }
+
+
+
+export const getProfileInformation = async (req: Request, res: Response) => {
+  const { profileId } = req.params;
+
+  try {
+    const { data: profile, error: profileError } = await supabase
+      .from('user_profiles')
+      .select('username, website, avatar_url, created_at')
+      .eq('id', profileId)
+      .single();
+
+    if (profileError || !profile) {
+      return res.status(404).json({ error: profileError });
+    }
+
+    const posts = await getUserArticles(profileId);
+
+
+    return res.json({
+      ...profile,
+      posts: posts || []
+    });
+  } catch (err) {
+    console.error('getUserProfile error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+};

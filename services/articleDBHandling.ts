@@ -11,8 +11,9 @@ type ArticleWithClient =  {
   article: Partial<Article>;
 }
 
+type SaveArticleFunction = (reqObject: ArticleWithClient) => Promise<Article[] | []>;
 
-const saveArticleToDatabase = async (reqObject: ArticleWithClient): Promise<Article[] | []> => {
+const saveArticleToDatabase: SaveArticleFunction = async (reqObject) => {
   const {article, supabaseAuth} = reqObject;
   //supabaseClient received from req.authRLSMiddleware
   if(!supabaseAuth) throw new Error('Failed to authenticate Supabase client');
