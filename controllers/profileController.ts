@@ -105,10 +105,11 @@ export const getIfUserHasInterestsPicked = async (req: RequestWithSupabase, res:
   
   if(!supabase || !id) return res.status(501).json({success: false, error: 'Login again!'});
   try {
-    const {data} = await supabase.from("user_profile_interests").select('preferred_fields').eq('userid', id).maybeSingle();
-    if(data && data.preferred_fields.length == 0){
+    const {data} = await supabase.from("user_profile_interests").select('preferred_fields').eq('userid', id).single();
+    if(data && data.preferred_fields.length == 0 || data === null){
       res.status(200).json({ success: true, data: "CHOOSE" });
     } 
+    
   } catch (error) {
     return res.status(500).json({success: false, error: 'There was an error'});
   }
@@ -174,4 +175,53 @@ export const getProfileInformation = async (req: Request, res: Response) => {
     console.error('getUserProfile error:', err);
     return res.status(500).json({ error: 'Server error' });
   }
+};
+
+export const getOwnProfileInfo = async (req: RequestWithSupabase, res: Response) => {
+  const supabase = req.supabaseAuth;
+  const user = req.user;
+
+  if(!supabase || !user) return res.status(500).json({ error: 'Server error' });
+  
+  try {
+    const { data: profile } = await supabase
+    .from('user_profiles')
+    .select('username, website, avatar_url, created_at')
+    .eq('id', user.id)
+    .single();
+
+    return res.json(profile);
+  } catch (err) {
+    console.error('getUserProfile error:', err);
+    return res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const updateProfileInformation = async (req: RequestWithSupabase, res: Response) => {
+  const supabase = req.supabaseAuth;
+  const user = req.user;
+  const { profileId } = req.params;
+
+  if (!user || !user.id || !supabase) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+
+  const { username, website, avatar_url } = req.body;
+
+  const { error } = await supabase
+    .from('user_profiles')
+    .update({
+      username,
+      website,
+      avatar_url,
+      updated_at: new Date(),
+    })
+    .eq('id', profileId);
+
+  if (error) {
+    console.error('updateProfileInformation error:', error);
+    return res.status(500).json({ error: 'Failed to update profile.' });
+  }
+
+  return res.json({ message: 'Profile updated successfully.' });
 };

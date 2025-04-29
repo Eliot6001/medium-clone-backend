@@ -21,10 +21,10 @@ export const getUserSuggestions = async (
 ) => {
   const user = req.user;
   const id = user?.id;
-  console.log(user, id, "reached user id?")
+  console.log(user, id, "reached user id?");
   if (!id) {
     const generalSuggestions = await getGeneralSuggestions(10);
-    console.log("Reached first!",generalSuggestions)
+    console.log("Reached first!", generalSuggestions);
     return res
       .status(200)
       .json({ success: true, suggestions: generalSuggestions });
@@ -59,7 +59,7 @@ export async function getGeneralSuggestions(
     )
     .order("created_at", { ascending: false })
     .limit(50)
-    .overrideTypes<Post[]>(); // <-- tell TypeScript what `data` really is
+    .overrideTypes<Post[]>(); // describe to TypeScript what `data` really is
 
   if (error) {
     console.error("Error fetching general pool:", error);
@@ -69,13 +69,11 @@ export async function getGeneralSuggestions(
     return [];
   }
 
-  // 2️⃣ Shuffle the pool in-place
   for (let i = pool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [pool[i], pool[j]] = [pool[j], pool[i]];
   }
 
-  // 3️⃣ Return the first `count`
   return pool.slice(0, count);
 }
 
@@ -85,30 +83,36 @@ const getUserSpecificSuggestions = async (
   params: { num_recommendations?: number; exploration_ratio?: number }
 ) => {
   // Logic to fetch user-specific suggestions, e.g., filter based on the user’s profile or preferences
-  const { data } = await axios.get<{ recommendations: Rec[] }>(
-    `${FASTAPI_URL}/${userId}/suggest`,
-    { params }
-  );
 
-  const recs = data.recommendations;
-  if (!recs.length) return [];
+  try {
+    const { data } = await axios.get<{ recommendations: Rec[] }>(
+      `${FASTAPI_URL}/${userId}/suggest`,
+      { params }
+    );
+    const recs = data.recommendations;
+    if (!recs.length) return [];
 
-  const postids = recs.map((r) => r.postid);
-  const { data: posts, error } = await supabase
-    .from("posts")
-    .select(
-      "postid, title, content, created_at, updated_at, field," +
-        "article_ratings!left(postid, sum:rating)"
-    )
-    .in("postid", postids)
-    .overrideTypes<Post[]>();
-  console.log(error, "An error");
+    const postids = recs.map((r) => r.postid);
+    const { data: posts, error } = await supabase
+      .from("posts")
+      .select(
+        "postid, title, content, created_at, updated_at, field," +
+          "article_ratings!left(postid, sum:rating)"
+      )
+      .in("postid", postids)
+      .overrideTypes<Post[]>();
+    console.log(recs, "An error");
 
-  if (!posts) return [];
+    if (!posts) return [];
 
-  const postsById = new Map<string, any>(
-    (posts || []).map((p) => [p.postid, p])
-  );
+    const postsById = new Map<string, any>(
+      (posts || []).map((p) => [p.postid, p])
+    );
 
-  return recs.map((r) => postsById.get(r.postid)).filter(Boolean); // drop any missing
+    return recs.map((r) => postsById.get(r.postid)).filter(Boolean); // drop any missing
+  } catch (error) {
+    console.log("User has the following error", error);
+    console.log("going back to general suggestions!");
+    return await getGeneralSuggestions(10);
+  }
 };

@@ -1,7 +1,9 @@
 import { Request, Response } from 'express'
 import express from 'express';
 import { getUserPublishedArticles, getUserDeletedArticles, getUserWatchedArticles,getIfUserHasInterestsPicked
-  ,postUserHasInterests, getProfileInformation
+  ,postUserHasInterests, getProfileInformation,
+  updateProfileInformation,
+  getOwnProfileInfo
  } from '../controllers/profileController';
 
 import { authMiddleware } from '../middlewares/authMiddleware'; // Import the auth middleware
@@ -13,12 +15,12 @@ import { submitHistory } from '../controllers/profileController';
 
 const router = express.Router();
 
+router.get('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, getIfUserHasInterestsPicked)
 router.get('/:profileId/articles', getUserPublishedArticles);
 router.get('/:profileId/deletedArticles', authMiddleware, supabaseAuthClientMiddleware, getUserDeletedArticles)
 router.get('/:profileId/history', authMiddleware, supabaseAuthClientMiddleware, getUserWatchedArticles)
-router.get('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, getIfUserHasInterestsPicked)
-router.get('/:profileId', getProfileInformation);
-
+router.get('/ownProfile',  authMiddleware, supabaseAuthClientMiddleware, getOwnProfileInfo);
+router.patch('/:profileId', authMiddleware, supabaseAuthClientMiddleware, updateProfileInformation)
 router.post('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, postUserHasInterests)
 
 router.post(
