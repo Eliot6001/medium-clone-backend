@@ -20,8 +20,10 @@ router.get('/:profileId/articles', getUserPublishedArticles);
 router.get('/:profileId/deletedArticles', authMiddleware, supabaseAuthClientMiddleware, getUserDeletedArticles)
 router.get('/:profileId/history', authMiddleware, supabaseAuthClientMiddleware, getUserWatchedArticles)
 router.get('/ownProfile',  authMiddleware, supabaseAuthClientMiddleware, getOwnProfileInfo);
+router.get('/:profileId', getProfileInformation);
+
 router.patch('/:profileId', authMiddleware, supabaseAuthClientMiddleware, updateProfileInformation)
-router.post('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, postUserHasInterests)
+router.get('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, postUserHasInterests)
 
 router.post(
   '/history',

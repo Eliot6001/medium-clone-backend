@@ -152,20 +152,15 @@ export const postUserHasInterests = async (req: RequestWithSupabase, res: Respon
 
 export const getProfileInformation = async (req: Request, res: Response) => {
   const { profileId } = req.params;
-
+  console.log("Received ", profileId)
   try {
     const { data: profile, error: profileError } = await supabase
       .from('user_profiles')
       .select('username, website, avatar_url, created_at')
       .eq('id', profileId)
       .single();
-
-    if (profileError || !profile) {
-      return res.status(404).json({ error: profileError });
-    }
-
+    console.log(profileError, "ERROR HERERER")
     const posts = await getUserArticles(profileId);
-
 
     return res.json({
       ...profile,
