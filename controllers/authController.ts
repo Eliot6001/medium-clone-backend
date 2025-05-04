@@ -15,7 +15,7 @@ const ConfirmAuth = async function (req: ConfirmAuthRequest, res: Response): Pro
   const token_hash = req.query.token_hash;
   const type = req.query.type;
   const next = req.query.next ?? "/";
-
+  console.log(`Received token_hash: ${token_hash}\ntypeof ${type}`)
   if (!token_hash || !type) {
       return res.redirect(303, "/auth/auth-code-error"); // Handle missing params
   }
@@ -24,7 +24,7 @@ const ConfirmAuth = async function (req: ConfirmAuthRequest, res: Response): Pro
 
   try {
       const { error } = await supabase.auth.verifyOtp({
-          type,
+          type: "email",
           token_hash,
       });
 

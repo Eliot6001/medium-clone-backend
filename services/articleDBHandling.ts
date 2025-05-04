@@ -49,7 +49,7 @@ const updateArticleInDatabase = async (reqObject: ArticleWithClient): Promise<Ar
 const getArticleFromDatabase = async (id: string): Promise<Article | null> => {
   const { data, error } = await supabaseInstance
     .from('posts')
-    .select('*')
+    .select('*, user_profiles(username, avatar_url)')
     .eq('postid', id)
     .single();
 

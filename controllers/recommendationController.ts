@@ -43,9 +43,17 @@ export const getUserSuggestions = async (
         .status(200)
         .json({ success: true, suggestions: generalSuggestions });
     }
+    // Remove duplicate suggestions based on postid
+    const uniqueSuggestionsMap = new Map<string, Post>();
+    userSuggestions.forEach((suggestion) => {
+      if (suggestion && !uniqueSuggestionsMap.has(suggestion.postid)) {
+      uniqueSuggestionsMap.set(suggestion.postid, suggestion);
+      }
+    });
+    const userSuggestionsUnique = Array.from(uniqueSuggestionsMap.values());
     return res
       .status(200)
-      .json({ success: true, suggestions: userSuggestions });
+      .json({ success: true, suggestions: userSuggestionsUnique });
   } catch (error) {
     console.error("Error fetching suggestions:", error);
     return res
@@ -60,8 +68,20 @@ export async function getGeneralSuggestions(
   const { data: pool, error } = await supabase
     .from("posts")
     .select(
-      "postid, title, content, created_at, updated_at, field," +
-        " article_ratings!left(postid, sum:rating)"
+      `postid,
+      title,
+      content,
+      created_at,
+      updated_at,
+      field,
+      user_profiles (
+        id,
+        username,
+        avatar_url
+      ),
+      article_ratings!left (
+        rating)
+     `
     )
     .order("created_at", { ascending: false })
     .limit(50)
@@ -101,19 +121,37 @@ const getUserSpecificSuggestions = async (
 
     const postids = recs.map((r) => r.postid);
     const { data: posts, error } = await supabase
-      .from("posts")
-      .select(
-        "postid, title, content, created_at, updated_at, field," +
-          "article_ratings!left(postid, sum:rating)"
+    .from("posts")
+    .select(`
+      postid,
+      title,
+      content,
+      created_at,
+      updated_at,
+      field,
+      user_profiles (
+        id,
+        username,
+        avatar_url
+      ),
+      article_ratings!left (
+        rating
       )
-      .in("postid", postids)
-      .overrideTypes<Post[]>();
-    console.log(recs, "An error");
+    `)
+    .in("postid", postids);
+
+    const formattedPosts = posts?.map(post => ({
+      ...post,
+      rating_score: post.article_ratings
+        ? post.article_ratings.reduce((sum, r) => sum + (r.rating ?? 0), 0)
+        : 0,
+    }));
+      
 
     if (!posts) return [];
 
     const postsById = new Map<string, any>(
-      (posts || []).map((p) => [p.postid, p])
+      (formattedPosts || []).map((p) => [p.postid, p])
     );
 
     return recs.map((r) => postsById.get(r.postid)).filter(Boolean); // drop any missing

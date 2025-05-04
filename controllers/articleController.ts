@@ -268,3 +268,24 @@ export const getPopularArticles = async (req: Request, res: Response) => {
       return res.status(500).json({ error: 'An error occurred while fetching popular articles.' });
     }
 }
+
+
+export const exploreArticles = async (req: Request, res: Response) => {
+  try {
+    const { field } = req.query;
+
+    const { data, error } = await supabase
+      .rpc('get_random_posts_full', { field_input: field ?? null });
+
+    if (error) {
+      console.error('Error fetching articles:', error);
+      return res.status(500).json({ error: 'Failed to fetch articles' });
+    }
+
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return res.status(500).json({ error: 'An unexpected error occurred' });
+  }
+}
+
