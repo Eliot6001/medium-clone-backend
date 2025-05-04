@@ -173,19 +173,19 @@ export const getProfileInformation = async (req: Request, res: Response) => {
 };
 
 export const getOwnProfileInfo = async (req: RequestWithSupabase, res: Response) => {
-  const supabase = req.supabaseAuth;
-  const user = req.user;
 
-  if(!supabase || !user) return res.status(500).json({ error: 'Server error' });
+  const {user} = req;
+  console.log(user, "USER REQUESTED THIS CRAP")
+  if(!req.supabaseAuth || !user) return res.status(500).json({ error: 'Server error' });
   
   try {
-    const { data: profile } = await supabase
+    const { data } = await supabase
     .from('user_profiles')
     .select('username, website, avatar_url, created_at')
     .eq('id', user.id)
     .single();
 
-    return res.json(profile);
+    return res.status(200).json(data);
   } catch (err) {
     console.error('getUserProfile error:', err);
     return res.status(500).json({ error: 'Server error' });

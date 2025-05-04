@@ -11,26 +11,36 @@ interface ConfirmAuthRequest extends Request {
 }
 
 const ConfirmAuth = async function (req: ConfirmAuthRequest, res: Response): Promise<void> {
-    console.log("ConfirmAuth", req);
-    const token_hash = req.query.token_hash;
-    const type = req.query.type;
-    const next = req.query.next ?? "/";
-    if (!token_hash || !type) {
-        return res.redirect(303, "/auth/auth-code-error");
-    }
-    const supabase = createClient({ req, res });
-    const { error } = await supabase.auth.verifyOtp({
-        type,
-        token_hash,
-    });
-    if (!error) {
-        console.log("ConfirmAuth success", req.query);
-        res.redirect(303, `${next}`);
-    }
+  console.log("ConfirmAuth", req); // You confirmed this is getting valid data
+  const token_hash = req.query.token_hash;
+  const type = req.query.type;
+  const next = req.query.next ?? "/";
 
-    // return the user to an error page with some instructions
-    res.redirect(303, "/auth/auth-code-error");
+  if (!token_hash || !type) {
+      return res.redirect(303, "/auth/auth-code-error"); // Handle missing params
+  }
+
+  const supabase = createClient({ req, res });
+
+  try {
+      const { error } = await supabase.auth.verifyOtp({
+          type,
+          token_hash,
+      });
+
+      if (error) {
+          return res.redirect(303, "/auth/auth-code-error");
+      }
+
+      console.log("ConfirmAuth success", req.query);
+
+      return res.redirect(303, `${next}`);
+  } catch (error) {
+      console.error("Error during OTP verification:", error);
+      return res.redirect(303, "/auth/auth-code-error"); // Handle internal errors gracefully
+  }
 };
+
 
 const oAuthSetup = async (req: Request, res: Response) => {
     // Cast code and next to string since they come from query parameters

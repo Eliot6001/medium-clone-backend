@@ -24,6 +24,7 @@ router.get('/:profileId', getProfileInformation);
 
 router.patch('/:profileId', authMiddleware, supabaseAuthClientMiddleware, updateProfileInformation)
 router.get('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, postUserHasInterests)
+router.post('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, postUserHasInterests)
 
 router.post(
   '/history',

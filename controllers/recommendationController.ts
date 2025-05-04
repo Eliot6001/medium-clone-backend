@@ -36,7 +36,13 @@ export const getUserSuggestions = async (
       num_recommendations: 20,
       exploration_ratio: 0.2,
     });
-
+    if (!userSuggestions.length) {
+      console.log("User hasn't interacted with anything!");
+      const generalSuggestions = await getGeneralSuggestions(10);
+      return res
+        .status(200)
+        .json({ success: true, suggestions: generalSuggestions });
+    }
     return res
       .status(200)
       .json({ success: true, suggestions: userSuggestions });
@@ -85,11 +91,12 @@ const getUserSpecificSuggestions = async (
   // Logic to fetch user-specific suggestions, e.g., filter based on the user’s profile or preferences
 
   try {
-    const { data } = await axios.get<{ recommendations: Rec[] }>(
+    const response = await axios.get<{ recommendations: Rec[] }>(
       `${FASTAPI_URL}/${userId}/suggest`,
       { params }
     );
-    const recs = data.recommendations;
+    console.log("Received data from recommendation :", response);
+    const recs = response.data.recommendations;
     if (!recs.length) return [];
 
     const postids = recs.map((r) => r.postid);
