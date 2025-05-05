@@ -14,6 +14,7 @@ import { Article } from "../types"; // Import the Article type
 import { type RequestWithSupabase } from "../middlewares/authRLSMiddleware";
 import { type RequestWithUser } from "../middlewares/authMiddleware";
 import { supabase } from "../config/supabaseClient";
+import {supabase as supabaseSuper} from '../config/supabaseSuperClient'
 import NodeCache from 'node-cache';
 import axios from "axios";
 const cache = new NodeCache({ stdTTL: 86400 });  // Cache expires in 24 hours
@@ -289,3 +290,14 @@ export const exploreArticles = async (req: Request, res: Response) => {
   }
 }
 
+
+export const getSummaryByPostId = async (req: Request, res: Response) => {
+  const { postid } = req.query; 
+  if (!postid) {
+    return res.status(400).json({ error: 'postid is required' });
+  }
+  console.log(postid, "postid")
+  const {data} = await supabaseSuper.from("article_metadata").select("summary").eq("postid", postid).maybeSingle();
+  if(!data) return res.status(501).json({ error: 'There was an error' });
+  res.json({ summary: data.summary });
+} 
