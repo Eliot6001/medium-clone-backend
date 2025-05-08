@@ -3,7 +3,7 @@
 
 import { User } from "@supabase/supabase-js";
 import { supabase } from "../config/supabaseClient";
-
+import { supabase as SSupebase } from "../config/supabaseSuperClient";
 type profileRole = {
     ROLE:'USER' | 'MODERATOR'
 }
@@ -56,7 +56,7 @@ const getUserArticles = async (profileId: string) => {
       return null;
     }
     
-    const { data, error } = await supabase
+    const { data, error } = await SSupebase
     .from("history")
     .upsert(
       [

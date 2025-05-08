@@ -12,7 +12,7 @@ import { type RequestWithUser } from '../middlewares/authMiddleware';
 import { RequestWithSupabase, supabaseAuthClientMiddleware } from '../middlewares/authRLSMiddleware';
 import {optionalAuthMiddleware} from '../middlewares/optionalAuthMiddleware'
 import { submitHistory } from '../controllers/profileController';
-
+import { supabase as Ssupabase } from '../config/supabaseSuperClient';
 const router = express.Router();
 
 router.get('/hasInterests', authMiddleware, supabaseAuthClientMiddleware, getIfUserHasInterestsPicked)
@@ -82,8 +82,8 @@ router.post('/engagement', async (req, res) => {
     }
 
     // Step 1: Check if an engagement exists
-    const { data: existingEngagement, error: fetchError } = await supabase
-      .from("engagements")
+    const { data: existingEngagement, error: fetchError } = await 
+    Ssupabase.from("engagements")
       .select("id, segment")
       .eq("postid", postid)
       .eq("userid", userid)
@@ -98,7 +98,7 @@ router.post('/engagement', async (req, res) => {
       // Step 2: If exists, check the segment value
       if (segment > existingEngagement.segment) {
         // Update segment only if new one is greater
-        const { error: updateError } = await supabase
+        const { error: updateError } = await Ssupabase
           .from("engagements")
           .update({ segment, updated_at: new Date().toISOString() })
           .eq("id", existingEngagement.id);
@@ -107,7 +107,7 @@ router.post('/engagement', async (req, res) => {
       }
     } else {
       // Step 3: Insert new engagement if no previous one exists
-      const { error: insertError } = await supabase
+      const { error: insertError } = await Ssupabase
         .from("engagements")
         .insert([{ postid, userid, segment, created_at: new Date().toISOString() }]);
 

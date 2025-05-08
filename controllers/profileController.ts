@@ -3,7 +3,7 @@ import {supabase} from "../config/supabaseClient";
 import { Request, Response } from "express";
 import {getUserArticles} from '../services/supabaseService'
 import { type RequestWithSupabase } from "../middlewares/authRLSMiddleware";
-
+import { supabase as Ssupabase } from "../config/supabaseSuperClient";
 export const getUserPublishedArticles = async (req: Request, res: Response) => {
     const { profileId } = req.params;
     if (!profileId) return res.status(400).json({ error: "Profile ID is required" });
@@ -53,7 +53,7 @@ export const getUserWatchedArticles = async (req: RequestWithSupabase, res: Resp
     //This Implementation isn't full, Yet it works
     //To spit out a 100 history articles
     // A desired approach would be to create a cursor param that sets from what date you fetch it
-    const { data, error } = await supabase.rpc('fetch_history_article_contents', {p_userid: req.user?.id} );
+    const { data, error } = await Ssupabase.rpc('fetch_history_article_contents', {p_userid: req.user?.id} );
 
     if (error) {
       return res.status(500).json({ error: error.message });
@@ -175,7 +175,6 @@ export const getProfileInformation = async (req: Request, res: Response) => {
 export const getOwnProfileInfo = async (req: RequestWithSupabase, res: Response) => {
 
   const {user} = req;
-  console.log(user, "USER REQUESTED THIS CRAP")
   if(!req.supabaseAuth || !user) return res.status(500).json({ error: 'Server error' });
   
   try {

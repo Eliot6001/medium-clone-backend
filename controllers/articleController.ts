@@ -243,32 +243,31 @@ export const recoverArticle = async (
   }
 };
 
-
-
 export const getPopularArticles = async (req: Request, res: Response) => {
-    //Try getting it from cache in memory
-    const cachedPopularArticles = cache.get('popularArticles');
+  // Try getting it from cache in memory
+  const cachedPopularArticles = cache.get('popularArticles');
 
-    if (cachedPopularArticles) {
-      console.log(cachedPopularArticles)
+  // Return the cached data if it exists and is not empty
+  if (cachedPopularArticles && Array.isArray(cachedPopularArticles) && cachedPopularArticles.length > 0) {
+      console.log("Serving from cache:", cachedPopularArticles);
       return res.json(cachedPopularArticles);
-    }
-  
-    try {
-      const { data, error } = await supabase.rpc('get_popular_articles');
-      console.log(data)
+  }
 
-      if (error) {
-        return res.status(500).json({ error: 'Failed to fetch popular articles from database.' });
+  try {
+      const { data, error } = await supabase.rpc('get_popular_articles');
+
+      if (error || !data || data.length === 0) {
+          return res.status(500).json({ error: 'Failed to fetch popular articles from database.' });
       }
-  
+
+      // Cache the raw data without wrapping it in an object
       cache.set('popularArticles', data);
-  
       return res.json(data);
-    } catch (err) {
+  } catch (err) {
       return res.status(500).json({ error: 'An error occurred while fetching popular articles.' });
-    }
-}
+  }
+};
+
 
 
 export const exploreArticles = async (req: Request, res: Response) => {
