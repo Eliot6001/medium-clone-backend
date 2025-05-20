@@ -24,7 +24,7 @@ export const getUserSuggestions = async (
   console.log(user, id, "reached user id?");
   if (!id) {
     const generalSuggestions = await getGeneralSuggestions(10);
-    console.log("Reached first!", generalSuggestions);
+    console.log("User not logged in, returning general suggestions");
     return res
       .status(200)
       .json({ success: true, suggestions: generalSuggestions });
@@ -33,8 +33,8 @@ export const getUserSuggestions = async (
   try {
     const selected = req.body.selected; // Ensure the frontend is sending the necessary data
     const userSuggestions = await getUserSpecificSuggestions(id, {
-      num_recommendations: 20,
-      exploration_ratio: 0.2,
+      num_recommendations: 10,
+      exploration_ratio: 0.25,
     });
     if (!userSuggestions.length) {
       console.log("User hasn't interacted with anything!");
@@ -115,7 +115,7 @@ const getUserSpecificSuggestions = async (
       `${FASTAPI_URL}/${userId}/suggest`,
       { params }
     );
-    console.log("Received data from recommendation :", response);
+    console.log("Received data from recommendation :", response.data.recommendations.length);
     const recs = response.data.recommendations;
     if (!recs.length) return [];
 
