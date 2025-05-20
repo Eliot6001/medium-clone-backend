@@ -83,7 +83,7 @@ export async function getGeneralSuggestions(
         rating)
      `
     )
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false }).eq("deleted", false)
     .limit(50)
     .overrideTypes<Post[]>(); // describe to TypeScript what `data` really is
 
@@ -138,7 +138,7 @@ const getUserSpecificSuggestions = async (
         rating
       )
     `)
-    .in("postid", postids);
+    .in("postid", postids).eq("deleted", false);
 
     const formattedPosts = posts?.map(post => ({
       ...post,

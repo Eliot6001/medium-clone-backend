@@ -6,8 +6,8 @@ import { type RequestWithSupabase } from "../middlewares/authRLSMiddleware";
 import { supabase as Ssupabase } from "../config/supabaseSuperClient";
 export const getUserPublishedArticles = async (req: Request, res: Response) => {
     const { profileId } = req.params;
-    if (!profileId) return res.status(400).json({ error: "Profile ID is required" });
-  
+    if (!profileId || !uuidRegex.test(profileId)) return res.status(400).json({ error: "Profile ID is required" });
+
     try {
       const posts = await getUserArticles(profileId);
   
@@ -21,11 +21,13 @@ export const getUserPublishedArticles = async (req: Request, res: Response) => {
       return res.status(500).json({ error: "Something went wrong!" });
     }
   };
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const getUserDeletedArticles = async (req: RequestWithSupabase, res: Response) => {
   const supabase = req.supabaseAuth;  
   const { profileId } = req.params;
   if(!supabase)       return res.status(500).json({ error: "Not Authenticated, Try again later!" });
+  if(!profileId || !uuidRegex.test(profileId)) return res.status(400).json({ error: "Profile ID is required" });
   try {
     const { data, error } = await supabase
       .from('posts')
@@ -46,8 +48,7 @@ export const getUserDeletedArticles = async (req: RequestWithSupabase, res: Resp
 
 export const getUserWatchedArticles = async (req: RequestWithSupabase, res: Response) => {
   const supabase = req.supabaseAuth;  
-  const { profileId } = req.params;
-  
+
   if(!supabase)       return res.status(500).json({ error: "Not Authenticated, Try again later!" });
   try {
     //This Implementation isn't full, Yet it works
@@ -69,7 +70,7 @@ export const getUserWatchedArticles = async (req: RequestWithSupabase, res: Resp
 export const submitHistory = async (req: RequestWithSupabase, res: Response) => {
   const { postid } = req.body;
 
-  if (!postid) {
+  if (!postid || !uuidRegex.test(postid)) {
     return res.status(400).json({ error: "There was an error!" });
   }
   
@@ -152,6 +153,7 @@ export const postUserHasInterests = async (req: RequestWithSupabase, res: Respon
 
 export const getProfileInformation = async (req: Request, res: Response) => {
   const { profileId } = req.params;
+  if (!profileId || !uuidRegex.test(profileId)) return res.status(400).json({ error: "Profile ID is required" });
   console.log("Received ", profileId)
   try {
     const { data: profile, error: profileError } = await supabase
@@ -195,6 +197,7 @@ export const updateProfileInformation = async (req: RequestWithSupabase, res: Re
   const supabase = req.supabaseAuth;
   const user = req.user;
   const { profileId } = req.params;
+  if(!profileId || !uuidRegex.test(profileId)) return res.status(400).json({ error: "Profile ID is required" });
 
   if (!user || !user.id || !supabase) {
     return res.status(403).json({ error: 'Unauthorized' });

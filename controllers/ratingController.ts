@@ -43,12 +43,16 @@ const submitRating = async (req: RequestWithSupabase, res: Response) => {
     res.status(500).json({ success: false, error: "Failed to save rating" });
   }
 };
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 const fetchArticleRating = async (req: Request, res: Response) => {
   const { articleId, userId } = req.query;
 
-  if (!articleId) {
+  if (!articleId || !uuidRegex.test(articleId as string)) {
     return res.status(400).json({ error: "Article ID is required" });
+  }
+ if (!userId || !uuidRegex.test(userId as string)) {
+    return res.status(400).json({ error: "User ID is required" });
   }
 
   try {

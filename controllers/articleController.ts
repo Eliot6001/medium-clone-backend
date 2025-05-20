@@ -17,34 +17,50 @@ import { supabase } from "../config/supabaseClient";
 import {supabase as supabaseSuper} from '../config/supabaseSuperClient'
 import NodeCache from 'node-cache';
 import axios from "axios";
+import { randomUUID, UUID } from "crypto";
+
 const cache = new NodeCache({ stdTTL: 86400 });  // Cache expires in 24 hours
 const FASTAPI_URL = process.env.FASTAPI_URL || "http://localhost:8800";
+
+function isValidArticleInput(body: any): body is { title: string; content: string; articleid?: UUID } {
+  return (
+    typeof body === "object" &&
+    typeof body.title === "string" &&
+    typeof body.content === "string" 
+     &&
+    (body.articleid === undefined || typeof body.articleid === "string")
+  );
+}
 
 export const submitArticle = async (
   req: RequestWithSupabase,
   res: Response
 ) => {
-  const { content, title } = req.body;
-
-  if (!content || !title) {
-    return res.status(400).json({ error: "Title or content missing" });
+   if (!isValidArticleInput(req.body)) {
+    return res.status(400).json({ error: "Invalid article data" });
+  }
+  if (req.method !== "POST" && req.method !== "PUT") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+  if (req.method === "PUT" && !req.body.articleid) {
+    return res.status(400).json({ error: "Article Id is missing or invalid" });
   }
 
-  console.log(req.user);
+  const { content, title } = req.body;
 
   if (!req.user)
     return res
       .status(500)
       .json({ error: "There has been an error, we apologize!" });
+
   if (!req.supabaseAuth)
     res.status(500).json({ error: "Failed to authenticate, Try again!" });
 
   const sanitizedHTML = sanitizeHTML(content);
-
   const article: Partial<Article> =
     req.method === "POST"
       ? {
-          title,
+          title: sanitizeHTML(title),
           userid: req.user.id, // Pull the user ID from the request
           content: sanitizedHTML,
           rating: 1,
@@ -53,7 +69,7 @@ export const submitArticle = async (
         }
       : {
           // If the request method is PUT
-          postid: req.body.articleid,
+          postid: req.body?.articleid,
           title,
           userid: req.user.id, // Pull the user ID from the request
           content: sanitizedHTML,
@@ -92,7 +108,9 @@ export const submitArticle = async (
 export const getArticle = async (req: RequestWithUser, res: Response) => {
   const { id } = req.params;
   console.log("Data received from a user", req.user);
-
+  if (!uuidRegex.test(id)) {
+   return res.status(400).json({ error: "Invalid article ID format" });
+  }
   try {
     // Fetch article once, outside conditional blocks
     const article = await getArticleFromDatabase(id);
@@ -117,7 +135,7 @@ export const getArticle = async (req: RequestWithUser, res: Response) => {
 
     if (!article.deleted) {
       const response = await AddUserHistory(req.user, article.postid);
-      console.log("History response", response);
+  
     
       // If article is not deleted, return it immediately
       return res.status(200).json(article);
@@ -138,7 +156,7 @@ export const getArticle = async (req: RequestWithUser, res: Response) => {
         removalBy: moderationData?.moderatorProfile?.username,
         removalId: moderationData?.moderatorProfile?.id,
       };
-      console.log(resultData);
+      
       return res.status(200).json(resultData);
     } else {
       return res.status(403).json({ error: "Not authorized to view this article" });
@@ -154,22 +172,25 @@ export const removeArticle = async (
   res: Response
 ) => {
   const { id } = req.params;
+  if (!id || !uuidRegex.test(id)) {
+   return res.status(400).json({ error: "Invalid article ID format" });
+  }
   if (!req.user)
     return res
-      .status(500)
+      .status(403)
       .json({ error: "There has been an error, we apologize!" });
   if (!req.supabaseAuth)
-    res.status(500).json({ error: "Failed to authenticate, Try again!" });
+    return res.status(403).json({ error: "Failed to authenticate, Try again!" });
   try {
     // Save the article to the database
     await removeArticleFromDatabase({
       article: { postid: id, userid: req.user.id },
       supabaseAuth: req.supabaseAuth,
     });
-    res.status(200).json({ success: true, data: "Article was removed" });
+    return res.status(200).json({ success: true, data: "Article was removed" });
   } catch (error) {
     console.log(error);
-    res.status(500).json({ success: false, error: "Failed to save article" });
+    return res.status(500).json({ success: false, error: "Failed to save article" });
   }
 };
 
@@ -186,6 +207,7 @@ export const getAllArticles = async (req: Request, res: Response) => {
 
 
 
+const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 export const recoverArticle = async (
   req: RequestWithSupabase,
@@ -193,13 +215,16 @@ export const recoverArticle = async (
 ) => {
   try {
     const { id } = req.params; // article id
+    if (!id || !uuidRegex.test(id)) {
+   return res.status(400).json({ error: "Invalid article ID format" });
+  }
     if (!req.user) {
-      return res.status(500).json({ error: "User not authenticated" });
+      return res.status(403).json({ error: "User not authenticated" });
     }
     if (!req.supabaseAuth) {
       return res.status(500).json({ error: "Failed to authenticate, try again!" });
     }
-
+    
     // Retrieve the article from the database
     const article = await getArticleFromDatabase(id);
     if (!article) {
@@ -213,7 +238,7 @@ export const recoverArticle = async (
    const ROLE = await getProfileRole(req.user.id)
     console.log(ROLE)
     if (ROLE?.ROLE !== "USER" && ROLE?.ROLE !== "MODERATOR" ) {
-      return res.status(500).json({ error: "Could not fetch user profile" });
+      return res.status(403).json({ error: "Could not fetch user profile" });
     }
     const userRole = ROLE; // "USER" or "MODERATOR"
 
@@ -244,44 +269,54 @@ export const recoverArticle = async (
 };
 
 export const getPopularArticles = async (req: Request, res: Response) => {
-  // Try getting it from cache in memory
   const cachedPopularArticles = cache.get('popularArticles');
 
-  // Return the cached data if it exists and is not empty
-  if (cachedPopularArticles && Array.isArray(cachedPopularArticles) && cachedPopularArticles.length > 0) {
-      console.log("Serving from cache:", cachedPopularArticles);
-      return res.json(cachedPopularArticles);
+  if (
+    cachedPopularArticles &&
+    Array.isArray(cachedPopularArticles) &&
+    cachedPopularArticles.length > 0
+  ) {
+   
+    return res.json(cachedPopularArticles);
   }
 
   try {
-      const { data, error } = await supabase.rpc('get_popular_articles');
+    const { data, error } = await supabaseSuper.rpc('get_popular_articles');
+   
+    if (error) {
+      console.error("DB error:", error);
+      return res.status(500).json({ error: 'Failed to fetch popular articles from database.' });
+    }
 
-      if (error || !data || data.length === 0) {
-          return res.status(500).json({ error: 'Failed to fetch popular articles from database.' });
-      }
+    if (!data || !Array.isArray(data) || data.length === 0) {
+      return res.status(204).json({ message: 'No popular articles found.' }); // 204 = No Content
+    }
 
-      // Cache the raw data without wrapping it in an object
-      cache.set('popularArticles', data);
-      return res.json(data);
+    cache.set('popularArticles', data, 60 * 5); // Expire cache every 5 minutes
+    return res.json(data);
   } catch (err) {
-      return res.status(500).json({ error: 'An error occurred while fetching popular articles.' });
+    console.error("Unexpected error:", err);
+    return res.status(500).json({ error: 'An error occurred while fetching popular articles.' });
   }
 };
+
 
 
 
 export const exploreArticles = async (req: Request, res: Response) => {
   try {
     const { field } = req.query;
-
+    if(field && typeof field !== 'string') {
+      return res.status(400).json({ error: 'Field must be a string' });
+    }
     const { data, error } = await supabase
       .rpc('get_random_posts_full', { field_input: field ?? null });
-
+  
     if (error) {
       console.error('Error fetching articles:', error);
       return res.status(500).json({ error: 'Failed to fetch articles' });
     }
-
+    
     return res.status(200).json(data);
   } catch (error) {
     console.error('Unexpected error:', error);
@@ -292,10 +327,13 @@ export const exploreArticles = async (req: Request, res: Response) => {
 
 export const getSummaryByPostId = async (req: Request, res: Response) => {
   const { postid } = req.query; 
+
   if (!postid) {
     return res.status(400).json({ error: 'postid is required' });
   }
-  console.log(postid, "postid")
+  if (!uuidRegex.test(postid as string)) {
+   return res.status(400).json({ error: "Invalid article ID format" });
+  }
   const {data} = await supabaseSuper.from("article_metadata").select("summary").eq("postid", postid).maybeSingle();
   if(!data) return res.status(501).json({ error: 'There was an error' });
   res.json({ summary: data.summary });
