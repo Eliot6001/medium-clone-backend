@@ -55,7 +55,7 @@ export const getUserWatchedArticles = async (req: RequestWithSupabase, res: Resp
     //To spit out a 100 history articles
     // A desired approach would be to create a cursor param that sets from what date you fetch it
     const { data, error } = await Ssupabase.rpc('fetch_history_article_contents', {p_userid: req.user?.id} );
-
+    
     if (error) {
       return res.status(500).json({ error: error.message });
     }
@@ -156,13 +156,13 @@ export const getProfileInformation = async (req: Request, res: Response) => {
   if (!profileId || !uuidRegex.test(profileId)) return res.status(400).json({ error: "Profile ID is required" });
   console.log("Received ", profileId)
   try {
-    const { data: profile, error: profileError } = await supabase
+    const { data: profile } = await supabase
       .from('user_profiles')
       .select('username, website, avatar_url, created_at')
       .eq('id', profileId)
       .single();
-    console.log(profileError, "ERROR HERERER")
-    const posts = await getUserArticles(profileId);
+
+      const posts = await getUserArticles(profileId);
 
     return res.json({
       ...profile,

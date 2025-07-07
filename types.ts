@@ -7,8 +7,9 @@ interface Article {
   rating?: number; 
   updated_at: Date;
   created_at: Date;
-  deleted: boolean;
-  deleted_at: Date;
+  deleted?: boolean;
+  deleted_at?: Date;
+  user_profiles?: { id?: string, username?: string, avatar_url?:string },
 }
 
 interface Rating {
