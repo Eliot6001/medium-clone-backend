@@ -17,7 +17,7 @@ const app = expressInstance();
 var corsOptions = {
     origin: [
     "https://medium-clone-azure.vercel.app",
-    "http://localhost:3002" 
+    "http://localhost:3000" 
   ],
   credentials: true,
 }

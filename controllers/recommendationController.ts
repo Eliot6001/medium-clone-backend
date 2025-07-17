@@ -24,20 +24,30 @@ export const getUserSuggestions = async (
   req: RequestWithUser,
   res: Response
 ) => {
-  try {
-    const userId = req.user?.id;
-    const suggestions = userId
-      ? await fetchSuggestedArticles(userId, 10)
-      : await fetchGeneralArticles(10);
+  const userId = req.user?.id;
 
+  try {
+    // First try FastAPI suggestion if user is logged in
+    if (userId) {
+      try {
+        const suggestions = await fetchSuggestedArticles(userId, 10);
+        return res.status(200).json({ success: true, suggestions });
+      } catch (fastapiErr) {
+        console.warn("FastAPI suggestion failed, falling back:", fastapiErr);
+      }
+    }
+
+    // Fallback to general suggestions
+    const suggestions = await fetchGeneralArticles(10);
     return res.status(200).json({ success: true, suggestions });
   } catch (err) {
-    console.error("Suggestion error:", err);
+    console.error("Final fallback suggestion error:", err);
     return res
       .status(500)
-      .json({ success: false, error: "Failed to fetch suggestions." });
+      .json({ success: false, error: "Failed to fetch any suggestions." });
   }
 };
+
 
 async function fetchGeneralArticles(limit: number): Promise<Article[]> {
   const { data, error } = await supabase
