@@ -15,8 +15,11 @@ import { createRouteHandler } from "uploadthing/express";
 const app = expressInstance();
 
 var corsOptions = {
-  origin: process.env.FRONTEND_URL,
-  optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
+    origin: [
+    "https://medium-clone-azure.vercel.app",
+    "http://localhost:3002" 
+  ],
+  credentials: true,
 }
 
 console.log(process.env.FRONTEND_URL)
